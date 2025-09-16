@@ -76,3 +76,10 @@ This project provide prediction on 2025/2026 EPL games based on EPL historic dat
 - python -m venv pl_env
 - pip install pandas numpy scikit-learn matplotlib seaborn xgboost
 - pip freeze > requirements.txt
+
+
+# Progress
+2025-09-16: 
+
+The scraping data from FBRef is way easier than finding an API
+Greate guide: https://medium.com/@ricardoandreom/how-to-scrape-and-personalize-data-from-fbref-with-python-a-guide-to-unlocking-football-insights-7e623607afca
