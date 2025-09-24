@@ -83,3 +83,7 @@ This project provide prediction on 2025/2026 EPL games based on EPL historic dat
 
 The scraping data from FBRef is way easier than finding an API
 Greate guide: https://medium.com/@ricardoandreom/how-to-scrape-and-personalize-data-from-fbref-with-python-a-guide-to-unlocking-football-insights-7e623607afca
+
+2025-09-23:
+To Do: I can identify the top player within each league and match them with their current team. In general, the current version does not consider the current squad performance.
+In the upcoming versions, considering transfers i.e. inflow and outflow of player, within/across league transfers, and the quality of transfer can help with the prediction. Not surprisingly, this analysis is quite similar to firm-leve and worker-level analysis.
