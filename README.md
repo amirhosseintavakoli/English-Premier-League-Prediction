@@ -1,5 +1,5 @@
 # English-Premier-League-Prediction
-This project provide prediction on 2025/2026 EPL games based on EPL historic data
+This project provides prediction on 2025/2026 EPL games based on EPL historic data
 
 ## Phase 1: Project Setup & Planning (Day 1–2)
 - Define project goals and scope (match outcome prediction first).
