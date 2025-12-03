@@ -87,3 +87,13 @@ Greate guide: https://medium.com/@ricardoandreom/how-to-scrape-and-personalize-d
 2025-09-23:
 To Do: I can identify the top player within each league and match them with their current team. In general, the current version does not consider the current squad performance.
 In the upcoming versions, considering transfers i.e. inflow and outflow of player, within/across league transfers, and the quality of transfer can help with the prediction. Not surprisingly, this analysis is quite similar to firm-leve and worker-level analysis.
+
+* Include teams' average age and its higher order in the regression.
+
+
+2025-10-17:
+Use patsy.dmatrix from https://colab.research.google.com/github/CausalAIBook/MetricsMLNotebooks/blob/main/PM3/python-nonlinear-ml-for-wage-prediction.ipynb#scrollTo=d8D89aBZXzEF to define a flexible variable set with interactions
+
+Use DNN (MLPClassifier and skorch)
+
+Use Stacking to improve prediction power
