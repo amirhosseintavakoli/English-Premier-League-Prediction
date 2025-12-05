@@ -619,49 +619,90 @@ if __name__ == "__main__":
     df = team_view(match_data)
     df = merge_team_player(df, stat_cols=['GoalsFor', 'GoalsAgainst'], rolling_window=5, lag=1, past_window=3)
 
-    st.write("Dataset Loaded ... Building features.")
-
     # create a feature list to select from
-    st.header("Feature Selection (placeholder)")
-    st.selectbox("Select Feature Set", options=[
-        "Basic Features",
-        "With Rolling Averages",
-        "With Lagged Stats",
-        "With Best/Worst Past Stats",
-        "Full Feature Set"
-    ], key="feature_set")
+    st.header("Feature Selection")
+    st.write("Feature Dictionary:" \
+    "\n- Week: Match week number for the team in the season (categorical)" \
+    "\n- IsHome: Whether the team is playing at home (True/False)" \
+    "\n- TeamID: Unique identifier for the team (categorical)" \
+    "\n- DayofWeek: Day of the week the match is played (1=Monday,...7=Sunday)" \
+    "\n- RollingAvgX_Stat: Rolling average of 'Stat' over the past X matches" \
+    "\n- LaggedX_Stat: Value of 'Stat' from X matches ago" \
+    "\n- MaxPastX_Stat: Maximum value of 'Stat' over the past X matches" \
+    "\n- MinPastX_Stat: Minimum value of 'Stat' over the past X matches" \
+    "\n- Per90_G+A-PK_POS_QX: Number of players in position POS (FW/MF/DF) in quartile X (0=best,3=worst) based on (Goals+Assits-PenatlyKicks) per 90 mins in the past season" 
+    )
 
 
-
-    features = ['Week', 'IsHome', 'TeamID', 'DayofWeek',
+    # default and options for feature selection
+    # in future versions, this could be dynamic based on user choice
+    # 1. choice of variable, choice of windown, choice of transformations
+    # e.g. rolling avg 3/5/7, lagged 1/2/3, past best/worst 3/5
+    # 2. selection of categorical vars to one-hot encode
+    default = ['Week', 'IsHome', 'TeamID', 'DayofWeek']
+    options = ['Week', 'IsHome', 'TeamID', 'DayofWeek', 
                'RollingAvg5_GoalsFor', 'RollingAvg5_GoalsAgainst',
-               'Lagged1_GoalsFor', 'Lagged1_GoalsAgainst',
-               'MaxPast3_GoalsFor', 'MaxPast3_GoalsAgainst',
-               'MinPast3_GoalsFor', 'MinPast3_GoalsAgainst',
-               'Per90_G+A-PK_FW_Q0', 'Per90_G+A-PK_FW_Q1',
-               'Per90_G+A-PK_FW_Q2', 'Per90_G+A-PK_FW_Q3',
-               'Per90_G+A-PK_MF_Q0', 'Per90_G+A-PK_MF_Q1',
-               'Per90_G+A-PK_MF_Q2', 'Per90_G+A-PK_MF_Q3',
-               'Per90_G+A-PK_DF_Q0', 'Per90_G+A-PK_DF_Q1',
-               'Per90_G+A-PK_DF_Q2', 'Per90_G+A-PK_DF_Q3']
+               'RollingAvg3_GoalsFor', 'RollingAvg3_GoalsAgainst',
+                'Lagged1_GoalsFor', 'Lagged1_GoalsAgainst',
+                'Lagged2_GoalsFor', 'Lagged2_GoalsAgainst',
+                'Lagged3_GoalsFor', 'Lagged3_GoalsAgainst',
+                'MaxPast3_GoalsFor', 'MaxPast3_GoalsAgainst',
+                'MinPast3_GoalsFor', 'MinPast3_GoalsAgainst',
+                'Per90_G+A-PK_FW_Q0', 'Per90_G+A-PK_FW_Q1',
+                'Per90_G+A-PK_FW_Q2', 'Per90_G+A-PK_FW_Q3',
+                'Per90_G+A-PK_MF_Q0', 'Per90_G+A-PK_MF_Q1',
+                'Per90_G+A-PK_MF_Q2', 'Per90_G+A-PK_MF_Q3',
+                'Per90_G+A-PK_DF_Q0', 'Per90_G+A-PK_DF_Q1',
+                'Per90_G+A-PK_DF_Q2', 'Per90_G+A-PK_DF_Q3',
+               ]
+    features = st.multiselect("Select Features", default=default, options=options, key="selected_features")
 
-    X, y, le, label_mapping, model_columns = build_dataset(df, features=features,
-                                                           categorical=['Week', 'IsHome', 'TeamID', 'DayofWeek'])
-    print("Feature matrix X shape:", X.shape)
+    # Train Models button — when clicked we train and store models/results in session_state
+    if st.button("Train Models"):
+        X, y, le, label_mapping, model_columns = build_dataset(df, features=features,
+                                                            categorical=['Week', 'IsHome', 'TeamID', 'DayofWeek'])
+        print("Feature matrix X shape:", X.shape)
 
-    X_train, X_test, y_train, y_test = safe_train_test_split(X, y, test_size=0.2, random_state=173)
-    models = train_models(X_train, y_train)
-    results = evaluate(models, X_test, y_test)
+        X_train, X_test, y_train, y_test = safe_train_test_split(X, y, test_size=0.2, random_state=173)
+        models = train_models(X_train, y_train)
+        results = evaluate(models, X_test, y_test)
 
-    st.header("Model Evaluation Results")
-    st.write(results)
+        # Example prediction on the full dataset
+        df_predictions = predict(df, features=features, model_columns=model_columns, models=models, le=le)
 
-    # Example prediction on the full dataset
-    df_predictions = predict(df, features=features, model_columns=model_columns, models=models, le=le)
-    print("Predictions added to dataframe.")
-    st.checkbox("Show Prediction data", value=False, key="show_data")
-    if st.session_state.show_data:
-        st.dataframe(df_predictions[(df_predictions['Season'] == '2025-2026') & (df_predictions['Week'] == 13)][['Team', 'Date', 'Week', 'Outcome', 'Predicted_knn', 'Predicted_logreg', 'Predicted_rf', 'Predicted_xgb', 'Predicted_nnet']])
+        # Persist trained artifacts so they survive Streamlit reruns caused by other widgets
+        st.session_state['models'] = models
+        st.session_state['model_columns'] = model_columns
+        st.session_state['le'] = le
+        st.session_state['results'] = results
+        st.session_state['df_predictions'] = df_predictions
+        print("Trained models and predictions stored in session_state.")
 
-    xgb.plot_importance(models['xgb'], max_num_features=12, grid=False)
-    st.pyplot(plt)
+    # If we've trained models (or they exist in session_state), show evaluation and optional displays
+    if 'models' in st.session_state:
+        st.header("Model Evaluation Results")
+        st.write(st.session_state.get('results', {}))
+
+        # Prediction table (only when user requests it)
+        # choose the season and week to display
+        selected_season = st.select_slider("Select Season", options=['2022-2023', '2023-2024', '2024-2025', '2025-2026'], key="selected_season", value='2025-2026')
+        selected_week = st.select_slider("Select Week", options=list(range(1, 39)), key="selected_week", value=13)
+
+
+        if st.checkbox("Show Prediction data", value=False, key="show_data"):
+            preds = st.session_state.get('df_predictions')
+            if preds is not None and 'Season' in preds.columns and 'Week' in preds.columns:
+                st.dataframe(preds[(preds['Season'] == selected_season) & (preds['Week'] == selected_week)][['Team', 'Date', 'Week', 'Outcome', 'Predicted_knn', 'Predicted_logreg', 'Predicted_rf', 'Predicted_xgb', 'Predicted_nnet']])
+            else:
+                st.write("No prediction dataframe available.")
+
+        # XGBoost Feature Importance (render on demand)
+        if st.checkbox("Show XGBoost Feature Importance", value=False, key="show_xgb_importance"):
+            try:
+                ax = xgb.plot_importance(st.session_state['models']['xgb'], max_num_features=12, grid=False)
+                # Get the figure associated with the axes and display it
+                fig = ax.figure if hasattr(ax, 'figure') else plt.gcf()
+                st.pyplot(fig)
+                plt.clf()
+            except Exception as e:
+                st.write("Unable to plot feature importance:", e)
