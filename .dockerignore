@@ -1,0 +1,10 @@
+# .dockerignore
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.git
+.gitignore
+.ipynb_checkpoints
+data/            # if large local data; mount or fetch at runtime
