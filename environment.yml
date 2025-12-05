@@ -28,10 +28,10 @@ dependencies:
   - blinker=1.9.0=py311haa95532_1
   - bottleneck=1.4.2=py311h540bb41_1
   - brotlicffi=1.1.0.0=py311h885b0b7_0
-  - bs4=4.14.2=py314hd3eb1b0_0
+  - bs4=4.14.2=py311hd3eb1b0_0
   - bzip2=1.0.8=h2bbff1b_6
   - c-ares=1.34.5=h731ff69_0
-  - ca-certificates=2025.11.4=haa95532_0
+  - ca-certificates=2025.12.2=haa95532_0
   - cachetools=5.5.1=py311haa95532_0
   - cairo=1.18.4=he9e932c_0
   - certifi=2025.11.12=py311haa95532_0
