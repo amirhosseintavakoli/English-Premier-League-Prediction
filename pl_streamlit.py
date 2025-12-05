@@ -597,18 +597,25 @@ def predict(df, features=None, model_columns=None, models=None, le=None, categor
         X_all = X_raw.copy()
 
     # Reindex to match the model training columns, fill missing with 0
-    X_all = X_all.reindex(columns=model_columns).astype(float).fillna(0)
+    # X_all_wo_na = X_all.reindex(columns=model_columns).astype(float).dropna()
+    X_all = X_all.reindex(columns=model_columns).astype(float)
+    
+    # Keep only rows without missing values
+    valid_rows = X_all.dropna().index
+    X_all = X_all.loc[valid_rows]
+    df_subset = df.loc[valid_rows].copy()
 
     scaler = models['scaler']
     X_scaled = scaler.transform(X_all)
 
-    df['Predicted_knn']     = le.inverse_transform(models['knn'].predict(X_scaled))
-    df['Predicted_logreg']  = le.inverse_transform(models['log_reg'].predict(X_scaled))
-    df['Predicted_rf']      = le.inverse_transform(models['rf'].predict(X_all))
-    df['Predicted_xgb']     = le.inverse_transform(models['xgb'].predict(X_all))
-    df['Predicted_nnet']    = le.inverse_transform(models['nnet'].predict(X_scaled))
+    df_subset['Predicted_knn']     = le.inverse_transform(models['knn'].predict(X_scaled))
+    df_subset['Predicted_logreg']  = le.inverse_transform(models['log_reg'].predict(X_scaled))
+    df_subset['Predicted_rf']      = le.inverse_transform(models['rf'].predict(X_all))
+    df_subset['Predicted_xgb']     = le.inverse_transform(models['xgb'].predict(X_all))
+    df_subset['Predicted_nnet']    = le.inverse_transform(models['nnet'].predict(X_scaled))
     
-    return df
+    return df_subset
+    # return df
 
 # Set page config
 st.set_page_config(page_title="Premier League Prediction", layout="wide")
@@ -619,6 +626,8 @@ if __name__ == "__main__":
     df = team_view(match_data)
     df = merge_team_player(df, stat_cols=['GoalsFor', 'GoalsAgainst'], rolling_window=5, lag=1, past_window=3)
 
+    # intro to the website
+    st.write("This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.")
     # create a feature list to select from
     st.header("Feature Selection")
     st.write("Feature Dictionary:" \
@@ -681,7 +690,14 @@ if __name__ == "__main__":
     # If we've trained models (or they exist in session_state), show evaluation and optional displays
     if 'models' in st.session_state:
         st.header("Model Evaluation Results")
-        st.write(st.session_state.get('results', {}))
+        st.write("K-Neighbors Accuracy: ", st.session_state['results'].get('knn_acc'))
+        st.write("Logistic Regression Accuracy: ", st.session_state['results'].get('logreg_acc'))
+        st.write("Random Forest Accuracy: ", st.session_state['results'].get('rf_acc'))
+        st.write("XGBoost Accuracy: ", st.session_state['results'].get('xgb_acc'))
+        st.write("Neural Network Accuracy: ", st.session_state['results'].get('nnet_acc'))
+
+
+        # st.write(st.session_state.get('results', {}))
 
         # Prediction table (only when user requests it)
         # choose the season and week to display
@@ -689,15 +705,15 @@ if __name__ == "__main__":
         selected_week = st.select_slider("Select Week", options=list(range(1, 39)), key="selected_week", value=13)
 
 
-        if st.checkbox("Show Prediction data", value=False, key="show_data"):
+        if st.button("Show Prediction data"):
             preds = st.session_state.get('df_predictions')
             if preds is not None and 'Season' in preds.columns and 'Week' in preds.columns:
-                st.dataframe(preds[(preds['Season'] == selected_season) & (preds['Week'] == selected_week)][['Team', 'Date', 'Week', 'Outcome', 'Predicted_knn', 'Predicted_logreg', 'Predicted_rf', 'Predicted_xgb', 'Predicted_nnet']])
+                st.dataframe(preds[(preds['Season'] == selected_season) & (preds['Week'] == selected_week)][['Team', 'Date', 'Week', 'Outcome', 'Predicted_knn', 'Predicted_logreg', 'Predicted_rf', 'Predicted_xgb', 'Predicted_nnet']].reset_index(drop=True))
             else:
                 st.write("No prediction dataframe available.")
 
         # XGBoost Feature Importance (render on demand)
-        if st.checkbox("Show XGBoost Feature Importance", value=False, key="show_xgb_importance"):
+        if st.button("Show XGBoost Feature Importance"):
             try:
                 ax = xgb.plot_importance(st.session_state['models']['xgb'], max_num_features=12, grid=False)
                 # Get the figure associated with the axes and display it
