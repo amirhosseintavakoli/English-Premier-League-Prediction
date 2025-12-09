@@ -22,11 +22,24 @@ from xgboost import plot_importance
 # Function to load Premier League Match data from multiple seasons
 @st.cache_data
 def load_match_data(season_url_map=None):
-    """Load and combine match schedules from fbref for multiple seasons.
+    """
+    check if the data is already loaded on Github. If yes, 
+    use the data.    
+
+    If no,
+    Load and combine match schedules from fbref for multiple seasons.
 
     season_url_map: Optional mapping season->url. If not provided, a default
     mapping for a handful of recent EPL seasons is used.
     """
+
+    # check if the data is loaded
+    try:
+        df = pd.read_csv("match_data.csv")
+        print("Loaded the cleaned match data.")
+        return df
+    except Exception as e:
+        print("Loading the raw data ...")
 
     # standard headers to mimic a browser request
     headers = {
@@ -106,6 +119,9 @@ def load_match_data(season_url_map=None):
     df['MatchID'] = df.index + 1
     print("Assigned stable MatchID to each match.")
 
+    df.to_csv("match_data.csv", index = False, encoding="utf-8")
+    print("Match Data Exported.")
+
     return df
 
 # Function to load Big 5 European Leagues Player data from multiple seasons
@@ -116,6 +132,16 @@ def load_player_data(season_url_map=None):
     season_url_map: Optional mapping season->url. If not provided a default mapping
     for several seasons is used.
     """
+
+    # load if the player data already exists
+    try:
+        df = pd.read_csv("player_data.csv", header=[0,1])
+        print("Loaded the player data.")
+        return df
+    except Exception as e:
+        print("Loading the raw player data ...")
+
+
     # standard headers to mimic a browser request
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -156,6 +182,10 @@ def load_player_data(season_url_map=None):
     df = pd.concat(dfs, ignore_index=True)
 
     print(f"Loaded player data with {len(df)} rows from {len(dfs)} seasons.")
+
+    df.to_csv("player_data.csv", index = False, encoding="utf-8")
+    print("Player Data Exported")
+
     return df
 
 # Function to clean and preprocess the player data
@@ -192,6 +222,7 @@ def clean_player_data(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df.columns = [_clean_col(c) for c in df.columns]
 
+
     # Normalise competition names
     if 'Comp' in df.columns:
         df['Comp'] = df['Comp'].replace({
@@ -223,7 +254,6 @@ def clean_player_data(df: pd.DataFrame) -> pd.DataFrame:
 
     print(f"Cleaned player data now has {len(df)} rows.")
     return df
-
 
 # Function to rank players by G+A-PK and return quartile counts baed on analysis_match_player_level.ipynb
 def rank_players_by_ga(df: pd.DataFrame, position='FW', metric='Per90_G+A-PK'):
@@ -451,7 +481,7 @@ def min_past_stats(df, stat_cols, window=1):
         )
     return df
 
-def merge_team_player(df, stat_cols, rolling_window=5, lag=1, past_window=3):
+def merge_team_player(df, player_data, stat_cols, rolling_window=5, lag=1, past_window=3):
     """Build estimation dataset with rolling averages, lagged stats, and best/worst past stats.
 
     Parameters:
@@ -470,13 +500,12 @@ def merge_team_player(df, stat_cols, rolling_window=5, lag=1, past_window=3):
     df = min_past_stats(df, stat_cols, window=past_window)
 
     for pos in ['FW', 'MF', 'DF']:
-        df_player_ranking = rank_players_by_ga(clean_player_data(player_data), position=pos, metric='Per90_G+A-PK')
+        df_player_ranking = rank_players_by_ga(player_data, position=pos, metric='Per90_G+A-PK')
  
         df = df.merge(df_player_ranking, how='left',
                         left_on=['Season', 'Team'],
                         right_on=['Season', 'Squad'])
     
-    # print(df.columns)
     return df
 
 def build_dataset(df, features=None, categorical=['Week', 'IsHome', 'TeamID', 'DayofWeek']):
@@ -625,9 +654,9 @@ st.set_page_config(page_title="Premier League Prediction", layout="wide")
 st.title("Premier League Match Prediction")
 if __name__ == "__main__":
     match_data = load_match_data()
-    player_data = load_player_data()
+    player_data = clean_player_data(load_player_data())
     df = team_view(match_data)
-    df = merge_team_player(df, stat_cols=['GoalsFor', 'GoalsAgainst'], rolling_window=5, lag=1, past_window=3)
+    df = merge_team_player(df, player_data, stat_cols=['GoalsFor', 'GoalsAgainst'], rolling_window=5, lag=1, past_window=3)
 
     # intro to the website
     st.write("This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.")
