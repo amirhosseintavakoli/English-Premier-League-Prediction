@@ -1,99 +1,29 @@
 # English-Premier-League-Prediction
-This project provides prediction on 2025/2026 EPL games based on EPL historic data
+See the website for the outcome (it may take some time for the application to load)
+https://english-premier-league-prediction.streamlit.app/
 
-## Phase 1: Project Setup & Planning (Day 1–2)
-- Define project goals and scope (match outcome prediction first).
-- Create a GitHub repo with a clear README and project structure.
-- Set up a Python environment (e.g., venv or conda) and install key libraries:
-  pip install pandas numpy scikit-learn matplotlib seaborn xgboost
+This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
 
-## Phase 2: Data Acquisition (Day 3–5)
-- Use existing historical match data.
-- Search for free APIs or datasets:
-  • Football-Data.org
-  • FBref
-  • Kaggle Datasets
-- Collect features like:
-  • Team stats (goals, possession, shots)
-  • Match metadata (home/away, date)
-  • Recent form (last 5 matches)
-  • Head-to-head history
+# Features Selection
 
-## Phase 3: Data Cleaning & Feature Engineering (Day 6–9)
-- Handle missing values, normalize formats.
-- Encode categorical variables (e.g., team names).
-- Create derived features:
-  • Rolling averages (e.g., goals scored in last 5 games)
-  • Home/away performance
-  • Elo ratings or team strength scores
+This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
 
-## Phase 4: Model Development (Day 10–15)
-- Split data into train/test sets.
-- Try baseline models:
-  • Logistic Regression
-  • Random Forest
-  • XGBoost
-- Evaluate using metrics:
-  • Accuracy, F1-score, Confusion Matrix
-- Use cross-validation for robustness.
+Feature Dictionary:
+Week: Match week number for the team in the season (categorical)
+IsHome: Whether the team is playing at home (True/False)
+TeamID: Unique identifier for the team (categorical)
+DayofWeek: Day of the week the match is played (1=Monday,...7=Sunday)
+RollingAvgX_Stat: Rolling average of 'Stat' over the past X matches
+LaggedX_Stat: Value of 'Stat' from X matches ago
+MaxPastX_Stat: Maximum value of 'Stat' over the past X matches
+MinPastX_Stat: Minimum value of 'Stat' over the past X matches
+Per90_G+A-PK_POS_QX: Number of players in position POS (FW/MF/DF) in quartile X (0=best,3=worst) based on (Goals+Assits-PenatlyKicks) per 90 mins in the past season
 
-## Phase 5: Model Tuning & Analysis (Day 16–18)
-- Hyperparameter tuning (GridSearchCV or RandomizedSearchCV).
-- Feature importance analysis.
-- Save models using joblib or pickle.
+# Prediction
+Using the sliders, you can see the match predictions for specific weeks based on each machine learning model.
 
-## Phase 6: Season Simulation (Optional, Day 19–21)
-- Use match predictions to simulate a full season.
-- Aggregate points to predict league winner.
-- Run multiple simulations to estimate probabilities.
+# XGBoost Feature Importance
+This button allows you to observe the importance of selected features in the xgboost model.
 
-## Phase 7: Visualization & Reporting (Day 22–25)
-- Create plots:
-  • Match prediction accuracy
-  • Feature importance
-  • League table simulation
-- Use matplotlib, seaborn, or Plotly.
-
-## Phase 8: Deployment & GitHub Showcase (Day 26–30)
-- Clean up code and notebooks.
-- Write a detailed README:
-  • Project overview
-  • Data sources
-  • Modeling approach
-  • Results and insights
-- Optional: Build a dashboard using Streamlit or Dash.
-- Push everything to GitHub with clear commits and structure.
-
-## Tools & Libraries
-- Python: Core language
-- scikit-learn / XGBoost: ML models
-- Pandas / NumPy: Data manipulation
-- Matplotlib / Seaborn / Plotly: Visualization
-- Streamlit / Dash: Optional dashboard
-- GitHub: Project hosting
-
-## How to create an evnironment on Github
-- python -m venv pl_env
-- pip install pandas numpy scikit-learn matplotlib seaborn xgboost
-- pip freeze > requirements.txt
-
-
-# Progress
-2025-09-16: 
-
-The scraping data from FBRef is way easier than finding an API
-Greate guide: https://medium.com/@ricardoandreom/how-to-scrape-and-personalize-data-from-fbref-with-python-a-guide-to-unlocking-football-insights-7e623607afca
-
-2025-09-23:
-To Do: I can identify the top player within each league and match them with their current team. In general, the current version does not consider the current squad performance.
-In the upcoming versions, considering transfers i.e. inflow and outflow of player, within/across league transfers, and the quality of transfer can help with the prediction. Not surprisingly, this analysis is quite similar to firm-leve and worker-level analysis.
-
-* Include teams' average age and its higher order in the regression.
-
-
-2025-10-17:
-Use patsy.dmatrix from https://colab.research.google.com/github/CausalAIBook/MetricsMLNotebooks/blob/main/PM3/python-nonlinear-ml-for-wage-prediction.ipynb#scrollTo=d8D89aBZXzEF to define a flexible variable set with interactions
-
-Use DNN (MLPClassifier and skorch)
-
-Use Stacking to improve prediction power
+# Future Path
+This is a work in progress and I'd appreciate any comments or feedbacks. Feel free to play around with this application and send your comments and request new features.
