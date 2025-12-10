@@ -660,6 +660,7 @@ if __name__ == "__main__":
 
     # intro to the website
     st.write("This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.")
+    st.write("Here's the GitHub repo: https://github.com/amirhosseintavakoli/English-Premier-League-Prediction")
     # create a feature list to select from
     st.header("Feature Selection")
     st.write("Feature Dictionary:" \
