@@ -2,7 +2,7 @@
 See the website for the outcome (it may take some time for the application to load)
 - https://english-premier-league-prediction.streamlit.app/
 
-This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
+This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics. This demo is presented on Streamlit Community Cloud.
 
 # Features Selection
 
