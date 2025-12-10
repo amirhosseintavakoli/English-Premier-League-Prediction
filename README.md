@@ -1,5 +1,5 @@
 # English-Premier-League-Prediction
-See the website for the outcome (it may take some time for the application to load)
+See the website for the outcome (it may take some time for the application to load) \n
 https://english-premier-league-prediction.streamlit.app/
 
 This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
@@ -8,8 +8,8 @@ This application allows you to train and evaluate various machine learning model
 
 This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
 
-Feature Dictionary:
-Week: Match week number for the team in the season (categorical)
+Feature Dictionary: \n
+Week: Match week number for the team in the season (categorical) \n
 IsHome: Whether the team is playing at home (True/False)
 TeamID: Unique identifier for the team (categorical)
 DayofWeek: Day of the week the match is played (1=Monday,...7=Sunday)
