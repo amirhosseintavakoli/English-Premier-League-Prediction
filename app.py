@@ -7,6 +7,8 @@ import requests
 from io import StringIO
 import streamlit as st
 
+from football_data_source import fetch_match_data as fetch_fd_match_data
+
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.neighbors import KNeighborsClassifier
@@ -21,16 +23,19 @@ from xgboost import plot_importance
 
 # Function to load Premier League Match data from multiple seasons
 @st.cache_data
-def load_match_data(season_url_map=None):
+def load_match_data(season_code_map=None):
     """
-    check if the data is already loaded on Github. If yes, 
-    use the data.    
+    check if the data is already loaded on Github. If yes,
+    use the data.
 
     If no,
-    Load and combine match schedules from fbref for multiple seasons.
+    Load and combine match schedules from football-data.co.uk for multiple
+    seasons (fbref.com blocks automated requests behind a Cloudflare
+    challenge, see football_data_source.py).
 
-    season_url_map: Optional mapping season->url. If not provided, a default
-    mapping for a handful of recent EPL seasons is used.
+    season_code_map: Optional mapping season->football-data.co.uk season code
+    (e.g. {'2022-2023': '2223'}). If not provided, a default mapping for a
+    handful of recent EPL seasons is used.
     """
 
     # check if the data is loaded
@@ -41,56 +46,17 @@ def load_match_data(season_url_map=None):
     except Exception as e:
         print("Loading the raw data ...")
 
-    # standard headers to mimic a browser request
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko)"
-                    "Chrome/115.0"
-                    "Safari/537.36",
-    
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.google.com/"
-    }
-
-    # sensible defaults to keep existing behaviour
     print("Loading match data...")
-    if season_url_map is None:
-        season_url_map = {
-            '2022-2023': 'https://fbref.com/en/comps/9/2022-2023/schedule/2022-2023-Premier-League-Scores-and-Fixtures',
-            '2023-2024': 'https://fbref.com/en/comps/9/2023-2024/schedule/2023-2024-Premier-League-Scores-and-Fixtures',
-            '2024-2025': 'https://fbref.com/en/comps/9/2024-2025/schedule/2024-2025-Premier-League-Scores-and-Fixtures',
-            '2025-2026': 'https://fbref.com/en/comps/9/schedule/Premier-League-Scores-and-Fixtures',
-        }
-
-    dfs = []
-    for season, url in season_url_map.items():
-        try:
-            print(f"Fetching match data for season {season}...")
-            resp = requests.get(url, headers=headers, timeout=15)
-            resp.raise_for_status()
-            tmp = pd.read_html(StringIO(resp.text))[0]
-            tmp['Season'] = season
-            tmp = tmp.dropna(subset=['Date'])
-            dfs.append(tmp)
-        except requests.exceptions.HTTPError as e:
-            print("HTTP error:", e, resp.status_code)
-            print("Response headers:", resp.headers)
-            raise
-        except Exception as e:
-            print("Other error:", e)
-            raise
-    if not dfs:
+    df = fetch_fd_match_data(season_code_map)
+    if df.empty:
         print("No match data loaded.")
         return pd.DataFrame()
-
-    df = pd.concat(dfs, ignore_index=True)
     # drop columns only if they exist (avoid KeyError)
     drop_cols = [c for c in ['Venue', 'Match Report', 'Notes'] if c in df.columns]
     if drop_cols:
         df = df.drop(columns=drop_cols)
 
-    print(f"Loaded match data with {len(df)} rows from {len(dfs)} seasons.")
+    print(f"Loaded match data with {len(df)} rows from {df['Season'].nunique()} seasons.")
 
     ## split the Date into a year, month and date
     df['year']  = [int(d.split("-")[0]) for d in df.Date]
@@ -157,6 +123,7 @@ def load_player_data(season_url_map=None):
             '2023-2024': 'https://fbref.com/en/comps/Big5/2022-2023/stats/players/2022-2023-Big-5-European-Leagues-Stats',
             '2024-2025': 'https://fbref.com/en/comps/Big5/2023-2024/stats/players/2023-2024-Big-5-European-Leagues-Stats',
             '2025-2026': 'https://fbref.com/en/comps/Big5/2024-2025/stats/players/2023-2024-Big-5-European-Leagues-Stats',
+            '2026-2027': 'https://fbref.com/en/comps/Big5/2025-2026/stats/players/2024-2025-Big-5-European-Leagues-Stats',
         }
 
     dfs = []
@@ -169,8 +136,9 @@ def load_player_data(season_url_map=None):
             tmp['Season'] = season
             dfs.append(tmp)
         except requests.exceptions.HTTPError as e:
-            print("HTTP error:", e, resp.status_code)
-            print("Response headers:", resp.headers)
+            resp = e.response
+            print("HTTP error:", e, resp.status_code if resp is not None else "unknown")
+            print("Response headers:", resp.headers if resp is not None else "unavailable")
             raise
         except Exception as e:
             print("Other error:", e)
@@ -604,7 +572,7 @@ def evaluate(models, X_test, y_test):
     results['nnet_acc'] = accuracy_score(y_test, models['nnet'].predict(X_test_scaled))
     return results
 
-def predict(df, features=None, model_columns=None, models=None, le=None, categorical=['Week', 'IsHome', 'TeamID', 'DayofWeek']):
+def predict(df: pd.DataFrame, features: list, model_columns:list, models: dict, le: LabelEncoder, categorical=['Week', 'IsHome', 'TeamID', 'DayofWeek']):
     """ Create dummies for categorical vars on the full df using the raw_features list,
     then reindex to model_columns (adding missing columns with zeros) before scaling and predicting.
     """
@@ -734,7 +702,7 @@ if __name__ == "__main__":
 
         # Prediction table (only when user requests it)
         # choose the season and week to display
-        selected_season = st.select_slider("Select Season", options=['2022-2023', '2023-2024', '2024-2025', '2025-2026'], key="selected_season", value='2025-2026')
+        selected_season = st.select_slider("Select Season", options=['2022-2023', '2023-2024', '2024-2025', '2025-2026', '2026-2027'], key="selected_season", value='2026-2027')
         selected_week = st.select_slider("Select Week", options=list(range(1, 39)), key="selected_week", value=13)
 
 
