@@ -8,6 +8,15 @@ Please note that:
 
 This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics. This demo is presented on Streamlit Community Cloud.
 
+# Data Sources
+
+* **Match data**: [football-data.co.uk](https://www.football-data.co.uk/englandm.php) per-season CSV archives.
+* **Player data**: [understat.com](https://understat.com/)'s player stats (goals, assists, xG, xA, minutes, cards).
+
+Both were originally scraped from fbref.com, which now blocks automated requests behind a Cloudflare challenge. See `football_data_source.py` and `player_data_source.py` for details.
+
+Note: football-data.co.uk only publishes **completed match results**, not the full season's fixture list. This means a given week only shows up in the data (and can only be predicted on) once its matches have actually been played — there's no way to get predictions for a future, unplayed week.
+
 # Features Selection
 
 This application allows you to train and evaluate various machine learning models to predict Premier League match outcomes based on historical match and player data. You can select different features to include in the model, train the models, and view their performance metrics.
@@ -25,7 +34,7 @@ This application allows you to train and evaluate various machine learning model
 * Per90_G+A-PK_POS_QX: Number of players in position POS (FW/MF/DF) in quartile X (0=best,3=worst) based on (Goals+Assits-PenatlyKicks) per 90 mins in the past season
 
 # Prediction
-Using the sliders, you can see the match predictions for specific weeks based on each machine learning model.
+Using the sliders, you can see the match predictions for specific weeks based on each machine learning model. Only weeks whose matches have already been played will have data to show (see Data Sources above).
 
 # XGBoost Feature Importance
 This button allows you to observe the importance of selected features in the xgboost model.
