@@ -8,6 +8,7 @@ from io import StringIO
 import streamlit as st
 
 from football_data_source import fetch_match_data as fetch_fd_match_data
+from player_data_source import fetch_player_data as fetch_us_player_data
 
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
@@ -90,66 +91,37 @@ def load_match_data(season_code_map=None):
 
     return df
 
-# Function to load Big 5 European Leagues Player data from multiple seasons
+# Function to load EPL player data from multiple seasons
 @st.cache_data
-def load_player_data(season_url_map=None):
-    """Load and combine player stats pages from fbref for multiple seasons.
+def load_player_data(season_year_map=None):
+    """
+    check if the data is already cached on disk. If yes, use the data.
 
-    season_url_map: Optional mapping season->url. If not provided a default mapping
-    for several seasons is used.
+    If no,
+    Load and combine per-season player stats from understat.com (fbref.com
+    blocks automated requests the same way for its player stats pages, see
+    player_data_source.py).
+
+    season_year_map: Optional mapping season->understat season-start-year
+    (e.g. {'2022-2023': '2022'}). If not provided, a default mapping for a
+    handful of recent EPL seasons is used.
     """
 
     # load if the player data already exists
     try:
-        df = pd.read_csv("player_data.csv", header=[0,1])
+        df = pd.read_csv("player_data.csv")
         print("Loaded the player data.")
         return df
     except Exception as e:
         print("Loading the raw player data ...")
 
-
-    # standard headers to mimic a browser request
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0 Safari/537.36",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.google.com/"
-    }
-    
     print("Loading player data...")
-    if season_url_map is None:
-        season_url_map = {
-            '2022-2023': 'https://fbref.com/en/comps/Big5/2021-2022/stats/players/2021-2022-Big-5-European-Leagues-Stats',
-            '2023-2024': 'https://fbref.com/en/comps/Big5/2022-2023/stats/players/2022-2023-Big-5-European-Leagues-Stats',
-            '2024-2025': 'https://fbref.com/en/comps/Big5/2023-2024/stats/players/2023-2024-Big-5-European-Leagues-Stats',
-            '2025-2026': 'https://fbref.com/en/comps/Big5/2024-2025/stats/players/2023-2024-Big-5-European-Leagues-Stats',
-            '2026-2027': 'https://fbref.com/en/comps/Big5/2025-2026/stats/players/2024-2025-Big-5-European-Leagues-Stats',
-        }
-
-    dfs = []
-    for season, url in season_url_map.items():
-        try:
-            print(f"Fetching player data for season {season}...")
-            resp = requests.get(url, headers=headers, timeout=10)
-            resp.raise_for_status()  # raises HTTPError for 4xx/5xx
-            tmp = pd.read_html(StringIO(resp.text))[0]
-            tmp['Season'] = season
-            dfs.append(tmp)
-        except requests.exceptions.HTTPError as e:
-            resp = e.response
-            print("HTTP error:", e, resp.status_code if resp is not None else "unknown")
-            print("Response headers:", resp.headers if resp is not None else "unavailable")
-            raise
-        except Exception as e:
-            print("Other error:", e)
-            raise
-    if not dfs:
+    df = fetch_us_player_data(season_year_map)
+    if df.empty:
         print("No player data loaded.")
         return pd.DataFrame()
 
-    df = pd.concat(dfs, ignore_index=True)
-
-    print(f"Loaded player data with {len(df)} rows from {len(dfs)} seasons.")
+    print(f"Loaded player data with {len(df)} rows from {df['Season'].nunique()} seasons.")
 
     df.to_csv("player_data.csv", index = False, encoding="utf-8")
     print("Player Data Exported")
